@@ -1,0 +1,9 @@
+{
+  "short_name": "Authentication",
+  "name": "Authentication tests",
+  "icons": [],
+  "start_url": ".",
+  "display": "fullscreen",
+  "theme_color": "#000000",
+  "background_color": "#ccc"
+}

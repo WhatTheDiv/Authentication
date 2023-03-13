@@ -1,0 +1,15 @@
+.container_ErroBoundary{
+  border: 1px solid #3633e4;
+  border-radius:2rem;
+  background: linear-gradient(to bottom right, #97baff,#181871);
+  padding:1rem;
+  margin:15vh 1rem;
+  height:40vh;
+  display:flex;
+  align-items: center;
+  justify-content: center;
+  font-size:2rem;
+  font-weight:bold;
+  text-shadow: 1px 1px 10px #ccc;
+  box-shadow: 2px 2px 2px black;
+}

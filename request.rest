@@ -1,0 +1,48 @@
+GET http://localhost:4001/users
+
+###
+POST http://localhost:4001/users
+Content-Type:application/json 
+
+{
+  "name":"Pat",
+  "password":"password"
+}
+
+###
+POST http://localhost:4001/login
+Content-Type:application/json 
+
+{
+  "name":"Pat",
+  "password":"password"
+}
+
+###
+GET http://localhost:3001/posts
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiUGF0IiwicGFzc3dvcmQiOiIkMmIkMTAkRzR0U2tTWjBPenBpdGxKMS95N0ZoLmJMa01malEvU0lCVFo0eTNPTllabTZRUU9CNDB2SGkiLCJpYXQiOjE2Nzg3NDcwMzcsImV4cCI6MTY3ODc0NzkzN30.HKOJMcZQJXWXEYznnm6W1uf9p3VceErop5maD18hW1k
+
+###
+POST http://localhost:4001/token
+Content-Type: application/json 
+
+{
+  "token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiUGF0IiwicGFzc3dvcmQiOiIkMmIkMTAkRzR0U2tTWjBPenBpdGxKMS95N0ZoLmJMa01malEvU0lCVFo0eTNPTllabTZRUU9CNDB2SGkiLCJpYXQiOjE2Nzg3NDY4Mjh9.s9RQCYt8LZlD6B5hl5SgXt4v-m9z_xKPSbRzRSBWwoE"
+}
+
+###
+DELETE http://localhost:4001/logout
+Content-Type: application/json 
+
+{
+  "token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiUGF0IiwicGFzc3dvcmQiOiIkMmIkMTAkRzR0U2tTWjBPenBpdGxKMS95N0ZoLmJMa01malEvU0lCVFo0eTNPTllabTZRUU9CNDB2SGkiLCJpYXQiOjE2Nzg3NDY4Mjh9.s9RQCYt8LZlD6B5hl5SgXt4v-m9z_xKPSbRzRSBWwoE"
+}
+
+###
+
+
+
+
+
+
+
