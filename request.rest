@@ -1,4 +1,7 @@
-GET http://localhost:4001/users
+GET http://localhost:4001/docs
+
+###
+POST http://localhost:4001/addToDb
 
 ###
 POST http://localhost:4001/users
@@ -27,7 +30,7 @@ POST http://localhost:4001/token
 Content-Type: application/json 
 
 {
-  "token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiUGF0IiwicGFzc3dvcmQiOiIkMmIkMTAkRzR0U2tTWjBPenBpdGxKMS95N0ZoLmJMa01malEvU0lCVFo0eTNPTllabTZRUU9CNDB2SGkiLCJpYXQiOjE2Nzg3NDY4Mjh9.s9RQCYt8LZlD6B5hl5SgXt4v-m9z_xKPSbRzRSBWwoE"
+  "token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiUGF0IiwicGFzc3dvcmQiOiIkMmIkMTAkb2VGb1kxMk1oYktmTExxNHBkMi9hTzdiVnBHL0ozVXdxUXl3WXByMkl1SWtDS2sxOGQuNmUiLCJpYXQiOjE2Nzk2Nzk4NDZ9.lfi11mVW89ynoFfnxiSNu6EU2hCM6GKMBUBFwLcuZG0"
 }
 
 ###
@@ -41,7 +44,14 @@ Content-Type: application/json
 ###
 
 
+POST http://localhost:4001/loginUser
+Content-Type: application/json 
 
+{
+  "username":"patcannon1",
+  "password":"creativePassword"
+}
+###
 
 
 

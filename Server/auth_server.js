@@ -4,28 +4,135 @@ const express = require('express')
 const app = express()
 const port = 4001
 const path = require('path')
+const bodyParser = require('body-parser')
 const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
-const users = []
+const Database = require ('nedb')
+const users = new Database({ filename:'users.db', autoload:true }) 
+const Db_Users = new Database({ filename:'db_users.db', autoload:true })
+const refreshTokens = new Database({ filename:'refreshTokens.db', autoload:true })
+
 
                                 //               AUTHENTICATION SERVER                // 
 
-app.use(express.json({limit:'10mb'}))
+app.use(express.json({limit:'20mb'}))
+app.use('/login', express.static( path.resolve(__dirname, '../login')))
+app.use((req, res, next) => {
+  res.append('Access-Control-Allow-Origin', ['http://localhost:3001']);
+  res.append('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
+  res.append('Access-Control-Allow-Headers', ['Content-Type','Access-Control-Allow-Credentials']);
+  res.append('Access-Control-Allow-Credentials', 'true');
+  next();
+});
 
-let refreshTokens = []
+// Main
 
-// testing
-app.get('/users', (req,res) => {
-  // responds with full user list
-  res.json(users)
+app.post('/createNewUser',  async (req,res) => {
+  console.log('Creating new user ...')
+  try {
+    if ( !req.body.username || !req.body.password || !req.body.name || !req.body.email) 
+      return res.status(400).json({message:'Missing / invalid field'})
+    else if ( await findUser_fromUsername(req.body.username) ){
+      console.log(' *** (',req.body.username,') Username already exists.')
+      return res.status(409).json({message:'Username already taken'})
+    }
+    
+    const username = req.body.username 
+    const password = await bcrypt.hash(req.body.password,10)
+    const name = req.body.name
+    const email = req.body.email
+    const user = {
+      name,
+      username,
+      password 
+    }
+  
+    Db_Users.insert(user, (err,item) =>{
+      if(err) throw new Error('Error inserting user into database')
+      
+      // if success
+      console.log('Created new user: ',user)
+
+      return res.status(201).end()
+      // res.redirect(302,'/login/HTML/login.js')
+    })
+  } catch (err) {
+    // if any errors
+    console.error('Error while creating new user: ',err)
+    return res.status(500).json({message:'OOPS! Server error'})
+  }
+})
+app.post('/loginUser', async (req,res) => {
+ try {
+  if( !req.body.username || !req.body.password ) return res.status(400).json({message:'Missing username / password'})
+  const shallowUser_unsafe = {
+    username:req.body.username,
+    password:req.body.password
+  }
+  const existingUser = await findUser_fromUsername(shallowUser_unsafe.username)
+  
+  if(!existingUser) return res.status(404).json({message:'Username / Password not found'})
+  else if(!await bcrypt.compare( shallowUser_unsafe.password, existingUser.password )) return res.status(404).json({message:'Username / Password not found'})
+
+  // username password check passed -
+
+  const accessToken = generateAccessToken({ username: existingUser.username, password: existingUser.password })
+  const refreshToken = jwt.sign({ username: existingUser.username, password: existingUser.password }, process.env.REFRESH_TOKEN_SECRET)
+  
+  refreshTokens.insert({ token: refreshToken }, (err,item) => { 
+    if(err) throw new Error('Error inserting refresh token')
+    console.log(' *** Sucessfully logged in ',existingUser.username)
+
+    return res.status(200,'').json({ accessToken, refreshToken })
+  })
+
+ } catch (err) {
+  console.error('Error logging in user:',err)
+  return res.status(500).json({message:'OOPS! Server error'})
+ }
+})
+app.post('/getNewAccessToken', (req,res) => {
+  try {
+    const refreshToken = req.body.token
+    if (!refreshToken) return res.sendStatus(401)
+
+    refreshTokens.find({ token: refreshToken }, (err, docs) => {
+      if (err) throw new Error('Error finding refresh token')
+      else if(docs.length <= 0) return res.sendStatus(401)
+
+      jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, shallowUser_safe) => {
+        if(err) throw new Error('Error verifying refresh token')
+        if(shallowUser_safe === undefined) return res.sendStatus(401)
+
+        res.json({token:generateAccessToken({username:shallowUser_safe.username, password:shallowUser_safe.password})})
+      })
+    })
+  } catch (err) {
+    console.error('Could not grant new access token', err)
+    return res.sendStatus(500)
+  }
+})
+app.delete('/logoutUser', bodyParser.urlencoded({extended:false}), (req,res) => {
+  try {
+    if(!req.body.token) throw new Error('No token given to logout')
+    refreshTokens.delete({token:req.body.token}, (err,numberOfRemovedItems) => {
+      if(err) throw new Error('Error removing refresh token')
+      res.sendStatus(200)
+    })
+  } catch (err) {
+    console.error('Error logging out! ',err)
+    res.sendStatus(500)
+  }
 })
 
-
-// main
+// Model
 
 app.delete('/logout', (req,res) => {      /*         DELETE REFRESH TOKEN          */
-  // create new refreshTokens array without this token
-  refreshTokens = refreshTokens.filter( token => token !== req.body.token)
+  // deletes refresh token from database
+  refreshTokens.delete({token:req.body.token}, (e,numRm => {
+  // refreshTokens = refreshTokens.filter( token => token !== req.body.token)
+    if(e) console.log('error removing refresh token!!!',e)
+  }))
 
   // send success
   res.sendStatus(204)
@@ -36,17 +143,58 @@ app.post('/token', (req,res) => {         /*         REFRESH TOKEN              
 
   // verify token was sent with request and token is in refreshTokens array
   if(refreshToken == null) return res.sendStatus(401) 
-  if(!refreshTokens.includes(refreshToken)) return res.sendStatus(403)
 
-  // verify refreshToken came from server private key  
-  jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, user) => {
-    if(err) return res.sendStatus(403)
+  // if(!refreshTokens includes(refreshToken)) return res.sendStatus(403)
+  refreshTokens.find({token:refreshToken}, (err,item) => {
+    if(err) res.sendStatus(401)
 
-    // create a new access token with current user
-    const accessToken = generateAccessToken({ name: user.name, password: user.password })
+    // verify refreshToken came from server private key  
+    jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, user) => {
+      if(err) return res.sendStatus(403)
 
-    // send success
-    res.json({ accessToken })
+      // create a new access token with current user
+      const accessToken = generateAccessToken({ name: user.name, password: user.password })
+
+      // send success
+      res.json({ accessToken })
+    })
+  })
+
+  
+})
+app.post('/login', (req,res) => {         /*         LOGS IN USER                  */
+  // finds user in user array that has matching name
+  users.find({name:req.body.name},async (err,item) => {
+    // if no user found, reject
+    if(err || item.length <= 0) return res.sendStatus(400)
+
+    const user = item[0]
+
+    try {
+      // compare password provided to password stored in user
+      if(await bcrypt.compare(req.body.password, user.password)){
+  
+        // * if good password * generates an access token from user
+        const accessToken = generateAccessToken({ name: user.name, password:user.password })
+  
+        // generates a refresh token
+        const refreshToken = jwt.sign({name:user.name, password:user.password}, process.env.REFRESH_TOKEN_SECRET)
+  
+        // adds new refreshToken to refreshTokens array
+        refreshTokens.insert({token:refreshToken}, (err, item) => {
+          if(err) console.log('ERROR saving refresh token to database')
+          res.json({ accessToken, refreshToken })
+        })
+  
+        // if success, passes access token and refresh token to user
+      } else {
+  
+        // if error, rejects request
+        res.sendStatus(401)
+      }
+    } catch (error) {
+      res.sendStatus(500)
+    }
   })
 })
 app.post('/users', async (req,res) => {   /*         CREATES, STORES NEW USER      */
@@ -61,52 +209,61 @@ app.post('/users', async (req,res) => {   /*         CREATES, STORES NEW USER   
     }
     
     // push user to user array
-    users.push(user)
+    users.insert(user, (err,item) => {
+      if(err) res.sendStatus(500)
+      console.log('stored new user: ',item)
 
-    // if success, send success
-    res.sendStatus(201)
+      // if success, send success
+      res.sendStatus(201)
+    })
+
+    
 
   } catch (error) {
     // if error, send fail
     res.sendStatus(500)
   }
 })
-app.post('/login', async (req,res) => {   /*         LOGS IN USER                  */
-  // finds user in user array that has matching name
-  const user = users.find(user => user.name === req.body.name)
 
-  // if no user found, reject
-  if(user == null) return res.sendStatus(400).send('Cannot find user')
+// Testing
 
-  try {
-
-    // compare password provided to password stored in user
-    if(await bcrypt.compare(req.body.password, user.password)){
-
-      // * if good password * generates an access token from user
-      const accessToken = generateAccessToken({ name: user.name, password:user.password })
-
-      // generates an access token
-      const refreshToken = jwt.sign({name:user.name, password:user.password}, process.env.REFRESH_TOKEN_SECRET)
-
-      // adds new refreshToken to refreshTokens array
-      refreshTokens.push(refreshToken)
-
-      // if success, passes access token and refresh token to user
-      res.json({ accessToken, refreshToken }).sendStatus(202)
-    } else {
-
-      // if error, rejects request
-      res.sendStatus(401).send('Not allowed')
-    }
-  } catch (error) {
-    
-  }
+app.get('/docs', (req,res) => {
+  // responds with full user list
+  const arr = []
+  users.find({}, (err,docs) => {
+    docs.forEach(item => {
+      arr.push(item)
+    });
+    res.json(arr)
+  })
+  
+})
+app.post('/addToDb', (req,res) => {
+  // adds random number to database
+  const number = Number((Math.random() * 100).toFixed(0))
+  users.insert({number},( err, item ) => {
+    if(err) console.log('Error in addToDb: ',err);
+    res.json({item})
+  })
+  
 })
 
+// Functions 
+
+async function findUser_fromUsername( username ) {
+  return new Promise((res,rej) => {
+    Db_Users.find({username}, (err,docs) => {
+      if(err) rej(new Error('Bad username given'))
+      else if(docs.length === 0) res(false)
+      else if(docs.length >= 1) res(docs[0])
+    })
+  })
+  
+}
 function generateAccessToken(user) {
   // takes { name, password } from user and generates access token
-  return jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '15m' })
+  return jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '5s' })
 }
+
 
 app.listen( port , () => console.log(`Authentication server listening on port ${port}`))

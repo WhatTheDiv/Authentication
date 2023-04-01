@@ -1,0 +1,68 @@
+html{
+  box-sizing: border-box;
+  color:#ccc;
+}
+body{
+  background-image: url("../resources/img/wallpaper_gates_lambo.jpeg");
+  background-color: #cccccc;
+  height: 100vh;
+  background-position: 70% 20%; 
+  background-repeat: no-repeat; 
+  background-size: cover; 
+  position:relative;
+  overflow:hidden;
+}
+.formContainer{
+  display:flex;
+  justify-content: center;
+  margin-top:15vh;
+  overflow:scroll;
+}
+.loginForm{
+  background:rgba(0, 96, 0, 0.702);
+  width:60vw;
+  padding:2rem 0;
+  border-radius: 1rem;
+  display:flex;
+  flex-direction: column;
+  border:1px solid #ccc;
+  justify-content: center;
+  align-items: center;
+}
+h1{
+  margin:0;
+}
+p{
+  display:none;
+  margin:0;
+}
+.loginForm span{
+  margin:.5rem 0;
+  width:75%;
+  display:flex;
+  flex-direction: column;
+}
+
+.loginForm span > label{
+  display:block;
+  font-size:.75rem;
+}
+.loginForm span > input{
+  font-size:1.5rem;
+  padding:.5rem 0;
+  background-color:#5c5c5c85;
+  border-radius:.4rem;
+  border:none;
+  align-self: center;
+  text-align: center;
+  width:100%;
+  outline:none;
+}
+.loginForm span > input:focus{
+  box-shadow: 0 0 2px 2px #ccc;
+}
+.submitButton button{
+  padding:1rem;
+  background:#ccc;
+  border:none;
+}

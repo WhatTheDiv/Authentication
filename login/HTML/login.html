@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Authenticator</title>
+  <script src='/login/JS/login.js' defer></script>
+  <link rel="stylesheet" href="/login/CSS/login.css">
+</head>
+<body>
+  <div class="formContainer">
+    <form class="loginForm">
+      <h1>Login</h1>
+      <p id="errorMessage"></p>
+      <span>
+        <label for="username">Username:</label>
+        <input onclick="inputClick(this)" class='formInput' name="username" type="text" value="patcannon1"/>
+      </span>
+      <span>
+        <label for="password">Password:</label>
+        <input onclick="inputClick(this)" class='formInput' name="password" type="text" value="creativePassword"/>
+      </span>
+      <span class="submitButton">
+        <button id='formSubmit' onclick="submitLoginUserData(this)">Login</button>
+      </span>
+      <span class="redirectButton">
+        <button onclick="routeToRegisterPage()" id='formRedirect'>No account? Click here to register</button>
+      </span>
+    </form>
+  </div>
+</body>
+</html>
