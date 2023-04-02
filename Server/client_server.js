@@ -5,6 +5,7 @@ const app = express()
 const port = 3001
 const path = require('path')
 const jwt = require('jsonwebtoken')
+const ServerIp = '192.168.2.105'
 
 
 const posts = [
@@ -23,19 +24,27 @@ const posts = [
 app.use('/login', express.static( path.resolve(__dirname, '../login')))
 app.use('/client', express.static (path.resolve(__dirname, '../client/build')))
 app.use(express.json({limit:'10mb'}))
+app.use((req, res, next) => {
+  res.append('Access-Control-Allow-Origin', ['http://'+ServerIp+':3000']);
+  res.append('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
+  res.append('Access-Control-Allow-Headers', ['Content-Type','Access-Control-Allow-Credentials']);
+  res.append('Access-Control-Allow-Credentials', 'true');
+  next();
+});
 
 app.get('/',middleware_checkLoggedIn, (req,res) => {
-  console.log('cp');
-  if(req.isLoggedIn){
-    console.log('is logged in');
-    return res.sendFile(path.resolve(__dirname, '../client/build', 'index.html'))
-  } else if(!req.isLoggedIn){
-    console.log('is not logged in');
-    return res.sendFile(path.resolve(__dirname, '../login/HTML', 'login.html'))
-  }
+  console.log('req.isLoggedIn:',req.isLoggedIn)
+  if(req.isLoggedIn) return res.sendFile(path.resolve(__dirname, '../client/build', 'index.html'))
+  else if(!req.isLoggedIn) return res.sendFile(path.resolve(__dirname, '../login/HTML', 'login.html'))
 })
-app.get('/getMyRestrictedContent', authenticateToken, (req,res) => {
-  res.json(posts.filter(posts => posts.username === req.user.username))
+app.get('/register',(req,res) => {
+  return res.sendFile(path.resolve(__dirname, '../login/HTML', 'register.html'))
+})
+app.get('/getUserData', populateCallWithUserContent, (req,res) => {
+  res.json({
+    name:req.user.name,
+    username:req.user.username
+  })
 })
 
 function authenticateToken( req, res, next ){
@@ -53,13 +62,12 @@ function authenticateToken( req, res, next ){
   })
 }
 async function middleware_checkLoggedIn( req, res, next ){
-  console.log('cp middleware');
   const tokens = findTokensInCookie(req.headers.cookie)
   if(checkLoggedIn(tokens.SESH_ID)){
     req.isLoggedIn = true
     next()
   }
-  else if(checkRefreshToken(tokens.REFRESH_ID)){
+  else if(await checkRefreshToken(tokens.REFRESH_ID)){
     try {
       const options = {
         headers:{
@@ -68,20 +76,20 @@ async function middleware_checkLoggedIn( req, res, next ){
         method:'POST',
         body:JSON.stringify({token:tokens.REFRESH_ID})
       }
-      const fetchRequest = new Request('http://localhost:4001/getNewAccessToken')
+      const fetchRequest = new Request('http://'+ServerIp+':4001/getNewAccessToken')
       const response = await fetch(fetchRequest,options)
-      if(!response.ok) throw new Error('Bad getNewAccessToken fetch')
       const data = await response.json()
+      if(!response.ok) throw new Error('Bad getNewAccessToken fetch: '+data.message)
 
       const user = getUserFromAccessToken(data.token)
-      console.log('New access token created by ',user.username)
+      console.log('New access token created by [',user.username,']')
 
       req.isLoggedIn = true
-      res.set({'Set-Cookie':"SESH_ID="+data.token+"; path=http://localhost"})
+      res.set({'Set-Cookie':"SESH_ID="+data.token+"; path=http://ServerIp"})
       next()
 
     } catch (err) {
-      console.log('Failed to use refresh token: ',err)
+      console.log('Failed to use refresh token: ',err.message)
       req.isLoggedIn = false 
       next()
     }
@@ -91,6 +99,38 @@ async function middleware_checkLoggedIn( req, res, next ){
     req.isLoggedIn = false 
     next()
   }
+}
+async function populateCallWithUserContent( req, res, next ){
+  const tokens = findTokensInCookie(req.headers.cookie)
+  if(!tokens.SESH_ID) return res.status(401).json({message:'No token given at homepage'})
+
+  const user = getUserFromAccessToken(tokens.SESH_ID)
+  if(user === null) return res.status(401).redirect('/')
+
+  try {
+    const options = {
+      headers:{
+        "Content-Type":"application/json"
+      },
+      method:'POST',
+      body:JSON.stringify({username:user.username})
+    }
+    const fetchRequest = new Request('http://'+ServerIp+':4001/getUser')
+    const response = await fetch(fetchRequest,options)
+    const data = await response.json()
+    if(!response.ok) throw new Error('Bad getUser fetch: '+response.message)
+    if(!data.user) res.status(500).json({message:'Server error finding user'})
+
+    req.user = data.user 
+    next()
+
+  } catch (err) {
+    console.log('*** Server Error ***')
+    console.log(err.message)
+    res.sendStatus(500);
+  }
+
+  
 }
 function findTokensInCookie(cookies,request={SESH_ID:true, REFRESH_ID:true}){
   let SESH_ID, REFRESH_ID = null
@@ -127,17 +167,36 @@ function checkLoggedIn(token){
     return true
   })
 }
-function checkRefreshToken(token){
-  console.log('check refresh tokens');
-
-  if(!token) return false 
-  return jwt.verify(token, process.env.REFRESH_TOKEN_SECRET, (err, user) => {
+async function checkRefreshToken(token){
+  if(!token){
+    console.log('No token given');
+    return false;
+  }
+  return jwt.verify(token, process.env.REFRESH_TOKEN_SECRET, async (err, user) => {
     if(err){
-      console.log('no refresh token');
+      console.log('Imposter refresh token');
       return false 
     }
-    console.log('good refresh token');
-    return true
+    console.log('Refresh token derived from secret, checking for it in database.');
+
+    try {
+      const options = {
+        headers:{
+          "Content-Type":"application/json"
+        },
+        method:'POST',
+        body:JSON.stringify({token})
+      }
+      const fetchRequest = new Request('http://'+ServerIp+':4001/validateRefreshTokenInDatabase')
+      const response = await fetch(fetchRequest,options)
+      const data = await response.json() 
+      console.log(data.message)
+      if(!response.ok) return false
+      return true
+    } catch (error) {
+      console.log(' Server error checking for refresh token validity: ',error.message)      
+      return false
+    }
   })
 }
 function getUserFromAccessToken(accessToken){

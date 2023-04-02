@@ -1,6 +1,7 @@
 
 
 async function submitRegisterUserData(t){
+  const ServerIp = '192.168.2.105'
   const inputs = document.querySelectorAll('.formInput')
   if(inputs.length <= 0) throw new Error('nothing given to form')
 
@@ -19,7 +20,7 @@ async function submitRegisterUserData(t){
   }
   const errObj = {}
   try {
-    const res = await fetch('http://localhost:4001/createNewUser',options)
+    const res = await fetch('http://'+ServerIp+':4001/createNewUser',options)
     console.log(res);
     if(!res.ok){
       const data = await res.json()
@@ -27,8 +28,7 @@ async function submitRegisterUserData(t){
       errObj.message = data.message
       throw new Error(data.message)
     }
-    console.log('check point')
-    location.replace('http://localhost:3001/')
+    location.replace('http://'+ServerIp+':3001/')
   } catch (err) {
     const errDispElement = document.querySelector('#errorMessage')
     errDispElement.innerText = '* '+errObj.message+' *'
@@ -39,6 +39,7 @@ async function submitRegisterUserData(t){
     
 }
 async function submitLoginUserData(t) {
+  const ServerIp = '192.168.2.105'
   const inputs = document.querySelectorAll('.formInput')
   if(inputs.length <= 0) throw new Error('nothing given to form')
   
@@ -57,7 +58,7 @@ async function submitLoginUserData(t) {
   
   const errObj = {}
   try {
-    const res = await fetch('http://localhost:4001/loginUser',options)
+    const res = await fetch('http://'+ServerIp+':4001/loginUser',options)
     const data = await res.json()
 
 
@@ -84,7 +85,7 @@ function routeToLoginPage(){
   location.replace('/')
 }
 function routeToRegisterPage(){
-  location.replace('/login/HTML/register.html')
+  location.replace('/register')
 }
 function inputClick(input) {
   input.select()

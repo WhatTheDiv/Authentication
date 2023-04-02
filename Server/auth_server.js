@@ -9,8 +9,9 @@ const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
 const Database = require ('nedb')
 const users = new Database({ filename:'users.db', autoload:true }) 
-const Db_Users = new Database({ filename:'db_users.db', autoload:true })
-const refreshTokens = new Database({ filename:'refreshTokens.db', autoload:true })
+const Db_Users = new Database({ filename:'Db_users.db', autoload:true })
+const Db_RefreshTokens = new Database({ filename:'Db_refreshTokens.db', autoload:true })
+const ServerIp = '192.168.2.105'
 
 
                                 //               AUTHENTICATION SERVER                // 
@@ -18,7 +19,7 @@ const refreshTokens = new Database({ filename:'refreshTokens.db', autoload:true 
 app.use(express.json({limit:'20mb'}))
 app.use('/login', express.static( path.resolve(__dirname, '../login')))
 app.use((req, res, next) => {
-  res.append('Access-Control-Allow-Origin', ['http://localhost:3001']);
+  res.append('Access-Control-Allow-Origin', ['http://'+ServerIp+':3001']);
   res.append('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
   res.append('Access-Control-Allow-Headers', ['Content-Type','Access-Control-Allow-Credentials']);
   res.append('Access-Control-Allow-Credentials', 'true');
@@ -79,7 +80,7 @@ app.post('/loginUser', async (req,res) => {
   const accessToken = generateAccessToken({ username: existingUser.username, password: existingUser.password })
   const refreshToken = jwt.sign({ username: existingUser.username, password: existingUser.password }, process.env.REFRESH_TOKEN_SECRET)
   
-  refreshTokens.insert({ token: refreshToken }, (err,item) => { 
+  Db_RefreshTokens.insert({ token: refreshToken }, (err,item) => { 
     if(err) throw new Error('Error inserting refresh token')
     console.log(' *** Sucessfully logged in ',existingUser.username)
 
@@ -91,31 +92,49 @@ app.post('/loginUser', async (req,res) => {
   return res.status(500).json({message:'OOPS! Server error'})
  }
 })
+app.post('/getUser', (req,res) => {
+  // add some middleware to validate server
+  findUser_fromUsername(req.body.username).then( result => {
+    return res.json({user:result, error:null})
+  }).catch( e => {
+    return res.json({user:null, error:'Could not retrieve that user'})
+  })
+})
 app.post('/getNewAccessToken', (req,res) => {
   try {
     const refreshToken = req.body.token
     if (!refreshToken) return res.sendStatus(401)
 
-    refreshTokens.find({ token: refreshToken }, (err, docs) => {
+    Db_RefreshTokens.find({ token: refreshToken }, (err, docs) => {
       if (err) throw new Error('Error finding refresh token')
-      else if(docs.length <= 0) return res.sendStatus(401)
+      else if(docs.length <= 0) return res.status(401).json({message:'Invalid / Expired token'})
 
       jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, shallowUser_safe) => {
         if(err) throw new Error('Error verifying refresh token')
-        if(shallowUser_safe === undefined) return res.sendStatus(401)
+        if(shallowUser_safe === undefined) return res.status(401).json({message:'Could not find user'})
 
         res.json({token:generateAccessToken({username:shallowUser_safe.username, password:shallowUser_safe.password})})
       })
     })
   } catch (err) {
     console.error('Could not grant new access token', err)
-    return res.sendStatus(500)
+    return res.status(500).json({message:'Imposter token!'})
   }
+})
+app.post('/validateRefreshTokenInDatabase', (req,res) => {
+  const token = req.body.token 
+  Db_RefreshTokens.find({ token },( err, docs ) => {
+    if(err) return res.status(500).json({message:'Server error finding token in db'})
+    else if(docs.length <= 0) return res.status(401).json({message:'Refresh token not in database'})
+    
+    return res.status(200).json({message:'Refresh token available in database'})
+  })
+  
 })
 app.delete('/logoutUser', bodyParser.urlencoded({extended:false}), (req,res) => {
   try {
     if(!req.body.token) throw new Error('No token given to logout')
-    refreshTokens.delete({token:req.body.token}, (err,numberOfRemovedItems) => {
+    Db_RefreshTokens.delete({token:req.body.token}, (err,numberOfRemovedItems) => {
       if(err) throw new Error('Error removing refresh token')
       res.sendStatus(200)
     })
@@ -129,8 +148,8 @@ app.delete('/logoutUser', bodyParser.urlencoded({extended:false}), (req,res) => 
 
 app.delete('/logout', (req,res) => {      /*         DELETE REFRESH TOKEN          */
   // deletes refresh token from database
-  refreshTokens.delete({token:req.body.token}, (e,numRm => {
-  // refreshTokens = refreshTokens.filter( token => token !== req.body.token)
+  Db_RefreshTokens.delete({token:req.body.token}, (e,numRm => {
+  // Db_RefreshTokens = Db_RefreshTokens.filter( token => token !== req.body.token)
     if(e) console.log('error removing refresh token!!!',e)
   }))
 
@@ -141,11 +160,11 @@ app.post('/token', (req,res) => {         /*         REFRESH TOKEN              
   // assign refreshtoken sent in fetch to varaible
   const refreshToken = req.body.token
 
-  // verify token was sent with request and token is in refreshTokens array
+  // verify token was sent with request and token is in Db_RefreshTokens array
   if(refreshToken == null) return res.sendStatus(401) 
 
-  // if(!refreshTokens includes(refreshToken)) return res.sendStatus(403)
-  refreshTokens.find({token:refreshToken}, (err,item) => {
+  // if(!Db_RefreshTokens includes(refreshToken)) return res.sendStatus(403)
+  Db_RefreshTokens.find({token:refreshToken}, (err,item) => {
     if(err) res.sendStatus(401)
 
     // verify refreshToken came from server private key  
@@ -180,8 +199,8 @@ app.post('/login', (req,res) => {         /*         LOGS IN USER               
         // generates a refresh token
         const refreshToken = jwt.sign({name:user.name, password:user.password}, process.env.REFRESH_TOKEN_SECRET)
   
-        // adds new refreshToken to refreshTokens array
-        refreshTokens.insert({token:refreshToken}, (err, item) => {
+        // adds new refreshToken to Db_RefreshTokens array
+        Db_RefreshTokens.insert({token:refreshToken}, (err, item) => {
           if(err) console.log('ERROR saving refresh token to database')
           res.json({ accessToken, refreshToken })
         })
@@ -262,7 +281,7 @@ async function findUser_fromUsername( username ) {
 }
 function generateAccessToken(user) {
   // takes { name, password } from user and generates access token
-  return jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '5s' })
+  return jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '20s' })
 }
 
 

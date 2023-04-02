@@ -1,6 +1,7 @@
 html{
   box-sizing: border-box;
   color:#ccc;
+  min-height:350px;
 }
 body{
   background-image: url("../resources/img/wallpaper_gates_lambo.jpeg");
