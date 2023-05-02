@@ -7,21 +7,30 @@ body{
   background-image: url("../resources/img/wallpaper_gates_lambo.jpeg");
   background-color: #cccccc;
   height: 100vh;
-  background-position: 70% 20%; 
+  background-position: 30% 20%; 
   background-repeat: no-repeat; 
   background-size: cover; 
   position:relative;
-  overflow:hidden;
+  overflow:scroll;
 }
 .formContainer{
   display:flex;
   justify-content: center;
-  margin-top:15vh;
   overflow:scroll;
+}
+
+h1{
+  margin:0;
+}
+p{
+  display:none;
+  margin:0;
+}
+#errorMessage{
+  color:red;
 }
 .loginForm{
   background:rgba(0, 96, 0, 0.702);
-  width:60vw;
   padding:2rem 0;
   border-radius: 1rem;
   display:flex;
@@ -29,13 +38,6 @@ body{
   border:1px solid #ccc;
   justify-content: center;
   align-items: center;
-}
-h1{
-  margin:0;
-}
-p{
-  display:none;
-  margin:0;
 }
 .loginForm span{
   margin:.5rem 0;
@@ -59,6 +61,24 @@ p{
   width:100%;
   outline:none;
 }
+.formInput_options{
+  display:flex;
+  justify-content: space-between;
+  align-items: center;
+  width:75%;
+  text-align: center;
+}
+.formInput_options > div > label{
+  cursor:pointer;
+  font-size:.75rem;
+}
+.formInput_options > .rememberMe{
+  display:flex;
+  align-items: center;
+}
+.formInput_options > .rememberMe > label{
+  padding-left:5px;
+}
 .loginForm span > input:focus{
   box-shadow: 0 0 2px 2px #ccc;
 }
@@ -66,4 +86,21 @@ p{
   padding:1rem;
   background:#ccc;
   border:none;
+}
+
+@media screen and (max-width: 499px){
+  .loginForm{
+    width:90vw;
+  }
+  .formContainer{
+    margin-top:5vh;
+  }
+}
+@media screen and (min-width: 500px){
+  .loginForm{
+    width:60vw;
+  }
+  .formContainer{
+    margin-top:15vh;
+  }
 }

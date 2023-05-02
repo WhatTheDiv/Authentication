@@ -1,0 +1,70 @@
+
+/* Container */
+.container_profile{
+  /* background:blue; */
+  position:relative;
+}
+.container_profile h1{
+  margin:0;
+  padding:2rem 0;
+  font-size:2rem;
+}
+.container_profile img{
+  position:absolute;
+  height:15px;
+  width:15px;
+  top:2rem;
+  left:10vw;
+  cursor:pointer;
+}
+.edit_show{
+  display:inline-block;
+}
+.edit_hide{
+  display:none;
+}
+
+/* User Info */
+
+.container_userInfo{
+
+}
+.container_userInfo span{
+  display:block;
+  /* background:red; */
+  text-align: left;
+  padding:0 10vw;
+}
+.container_userInfo h3{
+  display:inline-block;
+  width:13rem;
+  margin:1rem 0;
+}
+.container_userInfo input{
+  display:inline-block;
+  font-size: 1rem;
+  background:inherit;
+  border:none;
+  /* cursor:pointer; */
+}
+.container_userInfo p{
+  display:inline-block;
+  font-size: 1rem;
+  background:inherit;
+  border:none;
+}
+#updateInfo_newPassword{
+  border-bottom:1px solid #000;
+}
+
+
+/* Bottom Buttons */
+
+.container_userInfoButtons{
+  margin:0;
+  padding:2rem 0;
+  /* background:green; */
+}
+.container_userInfoButtons input{
+  margin:1rem;
+}

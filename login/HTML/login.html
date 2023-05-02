@@ -14,14 +14,26 @@
       <p id="errorMessage"></p>
       <span>
         <label for="username">Username:</label>
-        <input onclick="inputClick(this)" class='formInput' name="username" type="text" value="patcannon1"/>
+        <input required onclick="inputClick(this)" autocomplete="username" class='formInput' name="username" type="text" id="login_username" value="username"/>
       </span>
       <span>
         <label for="password">Password:</label>
-        <input onclick="inputClick(this)" class='formInput' name="password" type="text" value="creativePassword"/>
+        <input required onclick="inputClick(this)" autocomplete="current-password"  id="current-password" class='formInput' name="password" type="password"/>
       </span>
+      <div class="formInput_options">
+        <div class="rememberMe">
+          <input class='formInput' name="rememberMe" type="checkbox" id='rememberMe'/>
+          <label for='rememberMe'>Remember me</label>
+        </div>
+        <div class="forgotPassword">
+          <label id="forgotPassword" onclick="forgotPassword()">Forgot Password</label>
+        </div>
+        <div class="showPassword">
+          <label id="showPassword" onclick="toggle_showPassword()">Show Password</label>
+        </div>
+      </div>
       <span class="submitButton">
-        <button id='formSubmit' onclick="submitLoginUserData(this)">Login</button>
+        <button id='formSubmit' onclick="submitLoginUserData()">Login</button>
       </span>
       <span class="redirectButton">
         <button onclick="routeToRegisterPage()" id='formRedirect'>No account? Click here to register</button>

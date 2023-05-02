@@ -14,22 +14,26 @@
       <p id="errorMessage"></p>
       <span>
         <label for="name">Name:</label>
-        <input onclick="inputClick(this)" class='formInput' name="name" type="text" value="Pat"/>
+        <input onclick="inputClick(this)" class='formInput' name="name" type="text"/>
       </span>
       <span>
         <label for="email" class="email">Email:</label>
-        <input onclick="inputClick(this)" class='formInput' name="email" type="email" value="w@w"/>
+        <input onclick="inputClick(this)" class='formInput' name="email" type="email"/>
       </span>
       <span>
         <label for="username">Username:</label>
-        <input onclick="inputClick(this)" class='formInput' name="username" type="text" value="patcannon1"/>
+        <input onclick="inputClick(this)" class='formInput' name="username" type="text"/>
       </span>
       <span>
         <label for="password">Password:</label>
-        <input onclick="inputClick(this)" class='formInput' name="password" type="text" value="creativePassword"/>
+        <input onclick="inputClick(this)" autocomplete="new-password" class='formInput' id="new-password" name="password" type="password"/>
+      </span>
+      <span>
+        <label for="confirmPassword">Confirm password:</label>
+        <input onclick="inputClick(this)" class='formInput' autocomplete="new-password" id="new-password" name="confirmPassword" type="password"/>
       </span>
       <span class="submitButton">
-        <button id='formSubmit' onclick="submitRegisterUserData(this)">Register</button>
+        <button id='formSubmit' onclick="submitRegisterUserData()">Register</button>
       </span>
       <span class="redirectButton">
         <button id='formRedirect' onclick="routeToLoginPage()">Have an account already? Click to login</button>

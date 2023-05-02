@@ -1,8 +1,10 @@
 {
-	"folders": [
+  "folders": [
     {
       "path": ".."
+    },
+    {
+      "path": "../../Server_v3"
     }
-  ],
-	"settings": {}
+  ]
 }
